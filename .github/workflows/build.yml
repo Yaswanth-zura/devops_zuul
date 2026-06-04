@@ -67,7 +67,7 @@ jobs:
         run: |
           docker build \
           -t 663566123253.dkr.ecr.ap-south-2.amazonaws.com/zuul:v1 \
-          ./zuul-api-gateway
+          .
 
       - name: Push ZUUL Image
         run: |
