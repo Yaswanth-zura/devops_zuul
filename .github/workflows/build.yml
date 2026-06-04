@@ -1,0 +1,75 @@
+name: ZUUL Build And Push
+
+on:
+
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+
+
+  pre-build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+            distribution: temurin
+            java-version: '11'
+
+      - name: Verify Java
+        run: java -version
+
+      - name: Verify Maven
+        run: mvn -version
+
+      - name: Build Application
+        run: mvn clean package -DskipTests
+
+
+  build-and-push:
+        
+    needs: pre-build
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-2
+
+      - name: Verify AWS Login
+        run: aws sts get-caller-identity
+
+      - name: Login To Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker Version
+        run: docker --version
+
+      - name: Build ZUUL Image
+        run: |
+          docker build \
+          -t 663566123253.dkr.ecr.ap-south-2.amazonaws.com/zuul:v1 \
+          ./zuul-api-gateway
+
+      - name: Push ZUUL Image
+        run: |
+          docker push \
+          663566123253.dkr.ecr.ap-south-2.amazonaws.com/zuul:v1
