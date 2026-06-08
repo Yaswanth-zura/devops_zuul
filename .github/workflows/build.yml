@@ -66,10 +66,53 @@ jobs:
       - name: Build ZUUL Image
         run: |
           docker build \
-          -t 663566123253.dkr.ecr.ap-south-2.amazonaws.com/zuul:v1 \
+          -t 663566123253.dkr.ecr.ap-south-2.amazonaws.com/zuul:${{ github.run_number }} \
           .
 
       - name: Push ZUUL Image
         run: |
           docker push \
-          663566123253.dkr.ecr.ap-south-2.amazonaws.com/zuul:v1
+          663566123253.dkr.ecr.ap-south-2.amazonaws.com/zuul:${{ github.run_number }}
+
+  deploy:
+
+    needs: build-and-push
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Deploy ZUUL To EC2
+        uses: appleboy/ssh-action@v1.0.3
+
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          script: |
+
+            cd ~/devops_zuul
+
+            git pull origin main
+
+            sed -i "s/^ZUUL_TAG=.*/ZUUL_TAG=${{ github.run_number }}/" .env
+
+            echo "===== UPDATED ENV ====="
+            cat .env
+
+            aws ecr get-login-password \
+            --region ap-south-2 \
+            | docker login \
+            --username AWS \
+            --password-stdin \
+            663566123253.dkr.ecr.ap-south-2.amazonaws.com
+
+            docker network inspect micro-net >/dev/null 2>&1 || \
+            docker network create micro-net
+
+            docker compose pull zuul
+
+            docker compose up -d zuul
+
+            docker ps

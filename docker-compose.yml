@@ -1,0 +1,18 @@
+services:
+
+  zuul:
+    image: 663566123253.dkr.ecr.ap-south-2.amazonaws.com/zuul:${ZUUL_TAG}
+
+    container_name: zuul
+
+    ports:
+      - "9999:9999"
+
+    networks:
+      - micro-net
+
+networks:
+  micro-net:
+    external: true
+
+    
