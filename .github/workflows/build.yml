@@ -113,6 +113,8 @@ jobs:
 
             docker compose pull zuul
 
-            docker compose up -d zuul
+            docker rm -f zuul || true
+
+            docker compose up -d --force-recreate zuul
 
             docker ps
